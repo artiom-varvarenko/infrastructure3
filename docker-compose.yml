@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  # Reverse Proxy with SSL
+  jd-nginx:  # Replace 'jd' with your initials
+    build: nginx
+    container_name: jd-reverse-proxy
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    networks:
+      - jd-frontend-network
+      - jd-backend-network
+    depends_on:
+      - jd-backend
+      - jd-frontend
+    environment:
+      - NGINX_HOST=${NGINX_HOST:-localhost}
+
+  # Frontend Application
+  jd-frontend:
+    build:
+      context: frontend
+      dockerfile: frontend/Dockerfile
+      args:
+        - NODE_ENV=${NODE_ENV:-production}
+    container_name: jd-frontend-app
+    networks:
+      - jd-frontend-network
+    environment:
+      - REACT_APP_API_URL=${API_URL:-https://localhost/api}
+    volumes:
+      - jd-frontend-static:/app/build
+
+  # Backend API
+  jd-backend:
+    build:
+      context: backend
+      dockerfile: backend/Dockerfile
+      target: production  # Multi-stage build target
+    container_name: jd-backend-api
+    networks:
+      - jd-backend-network
+      - jd-database-network
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - DB_HOST=jd-postgres
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-taskdb}
+      - DB_USER=${DB_USER:-taskuser}
+      - DB_PASSWORD=${DB_PASSWORD:-taskpass}
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key}
+    depends_on:
+      - jd-postgres
+    volumes:
+      - jd-backend-logs:/app/logs
+
+  # PostgreSQL Database
+  jd-postgres:
+    image: postgres:15-alpine
+    container_name: jd-database
+    networks:
+      - jd-database-network
+    environment:
+      - POSTGRES_DB=${DB_NAME:-taskdb}
+      - POSTGRES_USER=${DB_USER:-taskuser}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-taskpass}
+    volumes:
+      - jd-postgres-data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+networks:
+  jd-frontend-network:
+    name: jd-frontend-net
+    driver: bridge
+  jd-backend-network:
+    name: jd-backend-net
+    driver: bridge
+  jd-database-network:
+    name: jd-database-net
+    driver: bridge
+
+volumes:
+  jd-postgres-data:
+    name: jd-postgres-volume
+  jd-frontend-static:
+    name: jd-frontend-volume
+  jd-backend-logs:
+    name: jd-backend-logs-volume
