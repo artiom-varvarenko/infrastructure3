@@ -6,15 +6,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production
 
-# Stage 2: Build
-FROM node:18-alpine AS build
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-
-# Stage 3: Production
+# Stage 2: Production
 FROM node:18-alpine AS production
 WORKDIR /app
 
@@ -25,9 +17,8 @@ RUN addgroup -g 1001 -S nodejs && \
 # Copy production dependencies
 COPY --from=dependencies --chown=nodejs:nodejs /app/node_modules ./node_modules
 
-# Copy built application
-COPY --from=build --chown=nodejs:nodejs /app/dist ./dist
-COPY --chown=nodejs:nodejs package*.json ./
+# Copy application code
+COPY --chown=nodejs:nodejs . .
 
 # Create logs directory
 RUN mkdir -p /app/logs && chown -R nodejs:nodejs /app/logs
@@ -36,4 +27,4 @@ USER nodejs
 
 EXPOSE 3000
 
-CMD ["node", "dist/index.js"]
+CMD ["node", "src/index.js"]
