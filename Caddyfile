@@ -1,4 +1,4 @@
-https://infra3.artiom-varvarenko.com {
+infra3.artiom-varvarenko.com {
     # Path-based routing to web application
     handle /app/* {
         reverse_proxy jd-webapp:3000
