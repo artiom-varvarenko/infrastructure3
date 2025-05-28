@@ -13,7 +13,4 @@ infra3.artiom-varvarenko.com {
     handle {
         respond "Welcome to the Multi-Container App" 200
     }
-
-    # TLS configuration (Caddy auto-generates certificates)
-    tls internal
 }
