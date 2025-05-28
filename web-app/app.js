@@ -5,6 +5,11 @@ const { Pool } = require('pg');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Dashboard route
+app.get('/app/dashboard', (req, res) => {
+    res.sendFile(__dirname + '/dashboard.html');
+});
+
 // Database connection with error handling
 const pool = new Pool({
     host: process.env.DB_HOST,
@@ -44,11 +49,6 @@ app.get('/app/health', async (req, res) => {
             error: err.message
         });
     }
-});
-
-// Dashboard route
-app.get('/app/dashboard', (req, res) => {
-    res.sendFile(__dirname + '/dashboard.html');
 });
 
 // Enhanced home page with modern UI
