@@ -1,5 +1,4 @@
-# For local development (replace with your domain for Azure deployment)
-https://localhost {
+https://infra3.artiom-varvarenko.com {
     # Path-based routing to web application
     handle /app/* {
         reverse_proxy jd-webapp:3000
