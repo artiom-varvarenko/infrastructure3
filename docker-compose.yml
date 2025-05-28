@@ -1,91 +1,90 @@
 version: '3.8'
 
 services:
-  # Reverse Proxy with SSL
-  jd-nginx:  # Replace 'jd' with your initials
-    build: nginx
-    container_name: jd-reverse-proxy
+  # Reverse Proxy - Caddy (replace 'jd' with your initials)
+  jd-proxy:
+    image: caddy:alpine
+    container_name: jd-proxy-container
     ports:
-      - "443:443"
       - "80:80"
+      - "443:443"
     volumes:
-      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - jd-caddy-data:/data
+      - jd-caddy-config:/config
     networks:
       - jd-frontend-network
-      - jd-backend-network
     depends_on:
-      - jd-backend
-      - jd-frontend
-    environment:
-      - NGINX_HOST=${NGINX_HOST:-localhost}
+      - jd-webapp
+      - jd-api
+    restart: unless-stopped
 
-  # Frontend Application
-  jd-frontend:
+  # Web Application (replace 'jd' with your initials)
+  jd-webapp:
     build:
-      context: frontend
-      dockerfile: frontend/Dockerfile
-      args:
-        - NODE_ENV=${NODE_ENV:-production}
-    container_name: jd-frontend-app
-    networks:
-      - jd-frontend-network
+      context: ./web-app
+      dockerfile: Dockerfile
+    container_name: jd-webapp-container
     environment:
-      - REACT_APP_API_URL=${API_URL:-https://localhost/api}
-    volumes:
-      - jd-frontend-static:/app/build
-
-  # Backend API
-  jd-backend:
-    build:
-      context: backend
-      dockerfile: backend/Dockerfile
-      target: production  # Multi-stage build target
-    container_name: jd-backend-api
-    networks:
-      - jd-backend-network
-      - jd-database-network
-    environment:
-      - NODE_ENV=${NODE_ENV:-production}
+      - NODE_ENV=${NODE_ENV}
       - DB_HOST=jd-postgres
       - DB_PORT=5432
-      - DB_NAME=${DB_NAME:-taskdb}
-      - DB_USER=${DB_USER:-taskuser}
-      - DB_PASSWORD=${DB_PASSWORD:-taskpass}
-      - JWT_SECRET=${JWT_SECRET:-your-secret-key}
+      - DB_NAME=${POSTGRES_DB}
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - PORT=3000
+    networks:
+      - jd-frontend-network
+      - jd-backend-network
     depends_on:
       - jd-postgres
-    volumes:
-      - jd-backend-logs:/app/logs
+    restart: unless-stopped
 
-  # PostgreSQL Database
+  # API Service (replace 'jd' with your initials)
+  jd-api:
+    build:
+      context: ./api-service
+      dockerfile: Dockerfile
+    container_name: jd-api-container
+    environment:
+      - NODE_ENV=${NODE_ENV}
+      - DB_HOST=jd-postgres
+      - DB_PORT=5432
+      - DB_NAME=${POSTGRES_DB}
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - PORT=4000
+    networks:
+      - jd-frontend-network
+      - jd-backend-network
+    depends_on:
+      - jd-postgres
+    restart: unless-stopped
+
+  # PostgreSQL Database (replace 'jd' with your initials)
   jd-postgres:
     image: postgres:15-alpine
-    container_name: jd-database
-    networks:
-      - jd-database-network
+    container_name: jd-postgres-container
     environment:
-      - POSTGRES_DB=${DB_NAME:-taskdb}
-      - POSTGRES_USER=${DB_USER:-taskuser}
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-taskpass}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - jd-postgres-data:/var/lib/postgresql/data
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - jd-backend-network
+    restart: unless-stopped
 
 networks:
   jd-frontend-network:
+    driver: bridge
     name: jd-frontend-net
-    driver: bridge
   jd-backend-network:
+    driver: bridge
     name: jd-backend-net
-    driver: bridge
-  jd-database-network:
-    name: jd-database-net
-    driver: bridge
 
 volumes:
   jd-postgres-data:
-    name: jd-postgres-volume
-  jd-frontend-static:
-    name: jd-frontend-volume
-  jd-backend-logs:
-    name: jd-backend-logs-volume
+  jd-caddy-data:
+  jd-caddy-config:

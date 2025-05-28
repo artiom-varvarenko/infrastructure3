@@ -1,0 +1,20 @@
+# For local development (replace with your domain for Azure deployment)
+https://localhost {
+    # Path-based routing to web application
+    handle /app/* {
+        reverse_proxy jd-webapp:3000
+    }
+
+    # Path-based routing to API service
+    handle /api/* {
+        reverse_proxy jd-api:4000
+    }
+
+    # Default route
+    handle {
+        respond "Welcome to the Multi-Container App" 200
+    }
+
+    # TLS configuration (Caddy auto-generates certificates)
+    tls internal
+}
