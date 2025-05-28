@@ -1,14 +1,10 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const { Pool } = require('pg');
+const path = require('path'); // Add this import
 
 const app = express();
 const port = process.env.PORT || 3000;
-
-// Dashboard route
-app.get('/app/dashboard', (req, res) => {
-    res.sendFile(__dirname + '/dashboard.html');
-});
 
 // Database connection with error handling
 const pool = new Pool({
@@ -51,7 +47,12 @@ app.get('/app/health', async (req, res) => {
     }
 });
 
-// Enhanced home page with modern UI
+// Dashboard route - ADD THIS BEFORE THE MAIN /app ROUTE
+app.get('/app/dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, 'dashboard.html'));
+});
+
+// Enhanced home page with modern UI - now with dashboard link
 app.get('/app', (req, res) => {
     res.send(`
     <!DOCTYPE html>
@@ -76,6 +77,21 @@ app.get('/app', (req, res) => {
                 color: #2c3e50;
                 margin-bottom: 30px;
                 font-size: 2.5em;
+            }
+            .dashboard-link {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #9b59b6;
+                color: white;
+                padding: 10px 20px;
+                border-radius: 8px;
+                text-decoration: none;
+                font-weight: 600;
+                transition: background 0.3s;
+            }
+            .dashboard-link:hover {
+                background: #8e44ad;
             }
             .stats-container {
                 display: grid;
@@ -234,6 +250,8 @@ app.get('/app', (req, res) => {
         </style>
     </head>
     <body>
+        <a href="/app/dashboard" class="dashboard-link">📊 Database Dashboard</a>
+        
         <div class="container">
             <h1>Todo Application</h1>
             
